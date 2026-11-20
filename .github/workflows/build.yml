@@ -3,39 +3,47 @@ name: Build JAANI AI STUDIO APK
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
+      - name: Set up Gradle 8.9
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
 
-      - name: Extract ZIP
+      - name: Find and extract the correct project ZIP
+        shell: bash
         run: |
-          mkdir project
-          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
-          test -n "$ZIP_FILE"
+          set -euo pipefail
+          ZIP_FILE="JAANI_AI_STUDIO_BUILD_READY.zip"
+          test -f "$ZIP_FILE" || { echo "Missing $ZIP_FILE in repository root"; exit 1; }
+          mkdir -p project
           unzip -q "$ZIP_FILE" -d project
+          test -f project/settings.gradle.kts
+          test -f project/app/build.gradle.kts
 
-      - name: Build APK
-        run: gradle -p project assembleDebug
+      - name: Build debug APK
+        run: gradle --no-daemon -p project assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: JAANI-AI-STUDIO-APK
+          name: JAANI-AI-STUDIO-debug-apk
           path: project/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
