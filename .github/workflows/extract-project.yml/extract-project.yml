@@ -1,0 +1,36 @@
+name: Extract JAANI AI Studio
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Project ZIP
+        run: |
+          ZIP="JAANI_AI_STUDIO_30_MINUTE_FEATURE.zip"
+
+          if [ ! -f "$ZIP" ]; then
+            echo "Project ZIP not found"
+            exit 1
+          fi
+
+          mkdir -p /tmp/jaani
+          unzip -o "$ZIP" -d /tmp/jaani
+          cp -a /tmp/jaani/. .
+
+      - name: Commit Project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --cached --quiet || git commit -m "Install 30 minute AI Studio"
+          git push
